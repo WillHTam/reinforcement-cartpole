@@ -1,0 +1,6 @@
+# Cart Pole
+
+2 actions, moving left and right.
+
+Reward gained for longer the pole is kept upright.
+Episode ends when pole falls over
