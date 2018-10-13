@@ -45,6 +45,7 @@ import torch.optim as optim
 HIDDEN_SIZE = 128 # 128 Hidden Neurons
 BATCH_SIZE = 16 # 16 episodes played every iteration
 PERCENTILE = 70 # Filter boundary, only take top 30% of episodes sorted by reward
+LEARNING_RATE = 0.01
 
 class Net(nn.Module):
     """
@@ -88,7 +89,7 @@ def iterate_batches(env, net, batch_size):
 
     list of steps in episode_steps
 
-    Loop of passing observation to net, sample ction to perform, and remember result of this processing
+    Loop of passing observation to net, sample action to perform, and remember result of this processing
     """
     batch = []
     episode_reward = 0.0
@@ -148,8 +149,8 @@ def filter_batch(batch, percentile):
 
     train_obs = []
     train_act = []
-    # filter episodes according to boundary.  for every episode in the batch
-    # check that the episdoe has a higher total reward than the boundary
+    # filter episodes according to boundary. For every episode in the batch,
+    # check that the episode has a higher total reward than the boundary
     # if it does, add to list of list of training observations and actions
     for example in batch:
         if example.reward < reward_bound:
@@ -165,7 +166,7 @@ def filter_batch(batch, percentile):
 
 
 if __name__ == "__main__":
-    # create envirnoment
+    # create environment
     env = gym.make("CartPole-v0")
     env = gym.wrappers.Monitor(env, directory="mon", force=True)
     obs_size = env.observation_space.shape[0]
@@ -173,8 +174,8 @@ if __name__ == "__main__":
 
     # create nn, objective, optimizer, and reward boundary
     net = Net(obs_size, HIDDEN_SIZE, n_actions)
-    objective = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(params=net.parameters(), lr=0.01)
+    objective = nn.CrossEntropyLoss() # the aforementioned nn.CrossEntropyLoss()
+    optimizer = optim.Adam(params=net.parameters(), lr=LEARNING_RATE)
     writer = SummaryWriter(comment="-cartpole")
 
     for iter_no, batch in enumerate(iterate_batches(env, net, BATCH_SIZE)):
@@ -182,8 +183,8 @@ if __name__ == "__main__":
         optimizer.zero_grad()
         action_scores_v = net(obs_v)
         loss_v = objective(action_scores_v, acts_v)
-        loss_v.backward()
-        optimizer.step()
+        loss_v.backward() # compute gradients
+        optimizer.step() # All optimizers implement a step() method, that updates the parameters. 
         print("%d: loss=%.3f, reward_mean=%.1f, reward_bound=%.1f" % (
             iter_no, loss_v.item(), reward_m, reward_b))
         writer.add_scalar("loss", loss_v.item(), iter_no)
